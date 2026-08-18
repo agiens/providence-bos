@@ -77,7 +77,7 @@ services:
       - app-tmp:/var/www/providence/app/tmp
       - ./config/local:/var/www/providence/app/conf/local:ro
     entrypoint: ["/bin/sh", "-c"]
-    command: ["while true; do php /var/www/providence/support/bin/caUtils process-task-queue || true; sleep 60; done"]
+    command: ["while true; do php /var/www/providence/support/bin/caUtils process-task-queue && php /var/www/providence/support/bin/caUtils process-indexing-queue || true; sleep 60; done"]
     networks: [internal]
 
 volumes:

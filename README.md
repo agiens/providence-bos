@@ -19,14 +19,21 @@ independent senior security gates, both of which returned a failing verdict on t
 what survives is written down in the BOS repo at
 `docs/status/2026-08-18-providence-app-install-design.md`.
 
-Not yet done, and load-bearing:
+The `caUtils` contract has since been **verified against the pinned commit** and the entrypoint
+corrected — see `docs/first-install.md` for the flag-by-flag reading. Three things it changed:
 
-- **No image has been built and no instance has been booted from this tree.** Every command below
-  is untested.
-- The installer invocation in `docker/entrypoint.sh` (`caUtils install` flags, profile path) is
-  **UNVERIFIED** against the 2.0.11 tree. Settle it at the pinned commit before first install.
-- `caUtils process-task-queue` in the `cron` service is likewise **UNVERIFIED** as the correct
-  2.0.11 subcommand name.
+- `--overwrite` is a **bare flag** whose own help says all existing data will be deleted. An earlier
+  revision of the entrypoint passed `--overwrite 0`, which is not a false value — it is the flag,
+  set. Removed.
+- `update-database-schema` accepts **no CLI options** and always asks for confirmation on STDIN, so
+  running it on container start hangs forever instead of serving. Migration is now an opt-in
+  operator step (`CA_AUTO_MIGRATE=1`, or the documented command in `docs/upgrade.md`).
+- `caUtils install` has **no `--admin-password`**. That variable is gone from `.env.example`.
+
+Still not done, and load-bearing:
+
+- **No image has been built and no instance has been booted from this tree.** The flags are read
+  from source; the install has not been executed end to end.
 
 ## What this repo deliberately does NOT do
 
@@ -97,6 +104,13 @@ external proxy, which is the only thing that may reach it.
 
 - **Search is SqlSearch**, the 2.x default, and is sufficient at pilot scale. ElasticSearch adds a
   JVM container and a second failure domain for no gain here.
+- **The stock header adapter stamps `userclass = 1`** — verified at `app/lib/Auth/Adapters/
+  HTTPHeaders.php:88`, and `1` is the public class that normally cannot use the Providence
+  cataloguing UI at all. The config value that selects it is `HTTPHeader`, singular, even though the
+  file is `HTTPHeaders.php` and the class is `HTTPHeaderAuthAdapter`. Its shipped defaults are
+  SiteMinder-style (`HTTP_SM_USER`, `HTTP_GIVENNAME`, `HTTP_SN`, `HTTP_MAIL`) and it reads
+  `$_SERVER` by that exact key, so the config must name the `$_SERVER` key, not the wire header.
+  None of this is live: `CA_AUTH_ADAPTER` stays `CaUsers` until the gateway exists.
 - **`group-concat-max-len` is set to 1MB** in `compose.yaml`. At MySQL's 1024-byte default,
   Providence's search indexing truncates silently and you get a quietly incomplete index rather than
   an error.
