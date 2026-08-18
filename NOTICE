@@ -1,0 +1,19 @@
+This product builds and operates CollectiveAccess Providence.
+
+  CollectiveAccess Providence
+  Copyright (c) Whirl-i-Gig and the CollectiveAccess contributors
+  https://github.com/collectiveaccess/providence
+  Licensed under the GNU General Public License v3.0 or later.
+
+Providence is downloaded at build time from the upstream repository at the exact
+commit recorded in PROVIDENCE_PIN. It is NOT vendored into this repository and it
+is NOT modified. Its copyright headers, LICENSE file, and in-product notices are
+carried into the image intact and must not be stripped.
+
+The wrapper in this repository (container definition, entrypoint, reverse-proxy
+configuration, deploy scripts, documentation) is a separate work licensed under
+Apache-2.0 — see LICENSE. See README.md "Licensing boundary" for why that
+separation is load-bearing and what would collapse it.
+
+"CollectiveAccess" and "Providence" are the marks of their respective owners.
+Operating the software does not grant permission to brand a service as theirs.

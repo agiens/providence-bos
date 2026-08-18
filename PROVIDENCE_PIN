@@ -1,0 +1,7 @@
+# The single source of truth for which upstream Providence this wrapper builds.
+# Nothing else in this repo may name a version. Bump here, rebuild, re-verify.
+PROVIDENCE_REPO=https://github.com/collectiveaccess/providence.git
+PROVIDENCE_TAG=2.0.11
+PROVIDENCE_COMMIT=aedf6fc0e18c55f2184c6d5f5a879eeca13019ce
+PROVIDENCE_RELEASED=2026-03-16
+PROVIDENCE_LICENSE=GPL-3.0-or-later

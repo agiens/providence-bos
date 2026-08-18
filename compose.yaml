@@ -1,0 +1,90 @@
+# purpose: single-tenant Providence. TLS terminates OUTSIDE this file; nothing here
+# publishes a port to the world except the nginx the external proxy talks to.
+name: providence-bos
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    command:
+      # Providence builds long GROUP_CONCAT strings during search indexing and silently
+      # truncates them at the 1024-byte default, producing a quietly incomplete index.
+      - --group-concat-max-len=1048576
+      - --max-allowed-packet=256M
+      - --innodb-buffer-pool-size=2G
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks: [internal]
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        PROVIDENCE_REPO: ${PROVIDENCE_REPO}
+        PROVIDENCE_COMMIT: ${PROVIDENCE_COMMIT}
+    restart: unless-stopped
+    depends_on:
+      db: {condition: service_healthy}
+    env_file: [.env]
+    volumes:
+      - media:/var/www/providence/media
+      - app-tmp:/var/www/providence/app/tmp
+      - app-log:/var/www/providence/app/log
+      - ./config/local:/var/www/providence/app/conf/local:ro
+    # No ports. php-fpm is reachable only from `web`, on the internal network.
+    networks: [internal]
+
+  web:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on: [app]
+    volumes:
+      - ./docker/nginx/providence.conf:/etc/nginx/conf.d/default.conf:ro
+      - media:/var/www/providence/media:ro
+    ports:
+      # Bound to loopback: the external TLS proxy is the only thing that may reach it.
+      - "127.0.0.1:${PROVIDENCE_HTTP_PORT:-8080}:80"
+    networks: [internal]
+
+  cron:
+    # Providence's queued work (media derivatives, search indexing) does not run itself.
+    # Without this the UI looks fine and derivatives/index quietly fall behind.
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        PROVIDENCE_REPO: ${PROVIDENCE_REPO}
+        PROVIDENCE_COMMIT: ${PROVIDENCE_COMMIT}
+    restart: unless-stopped
+    depends_on:
+      db: {condition: service_healthy}
+    env_file: [.env]
+    volumes:
+      - media:/var/www/providence/media
+      - app-tmp:/var/www/providence/app/tmp
+      - ./config/local:/var/www/providence/app/conf/local:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["while true; do php /var/www/providence/support/bin/caUtils process-task-queue || true; sleep 60; done"]
+    networks: [internal]
+
+volumes:
+  mysql-data:
+  media:
+  app-tmp:
+  app-log:
+
+networks:
+  internal:

@@ -1,0 +1,18 @@
+<!-- purpose: re-allow the delegates Providence needs. Debian's stock policy blocks PDF/PS
+     outright, which turns PDF ingest into an unexplained no-derivative. Everything not
+     needed stays denied. -->
+<policymap>
+  <policy domain="coder" rights="read|write" pattern="PDF" />
+  <policy domain="coder" rights="read|write" pattern="PS" />
+  <policy domain="coder" rights="read|write" pattern="EPS" />
+  <policy domain="coder" rights="none" pattern="MVG" />
+  <policy domain="coder" rights="none" pattern="MSL" />
+  <policy domain="coder" rights="none" pattern="URL" />
+  <policy domain="coder" rights="none" pattern="HTTPS" />
+  <policy domain="coder" rights="none" pattern="HTTP" />
+  <policy domain="delegate" rights="none" pattern="URL" />
+  <policy domain="delegate" rights="none" pattern="HTTPS" />
+  <policy domain="path" rights="none" pattern="@*" />
+  <policy domain="resource" name="memory" value="2GiB" />
+  <policy domain="resource" name="disk" value="8GiB" />
+</policymap>
